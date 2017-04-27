@@ -2,7 +2,7 @@
 
 var p; // shortcut to reference prototypes
 lib.ssMetadata = [
-		{name:"mockupFramework_atlas_", frames: [[0,0,533,534],[535,0,16,16],[553,0,16,16],[0,536,1180,22]]}
+		{name:"mockupFramework_atlas_", frames: [[535,0,16,16],[553,0,16,16],[585,0,12,7],[571,0,12,7],[0,0,533,534],[0,536,1180,22]]}
 ];
 
 
@@ -10,30 +10,44 @@ lib.ssMetadata = [
 
 
 
-(lib.postit = function() {
+(lib.arrow_left = function() {
 	this.spriteSheet = ss["mockupFramework_atlas_"];
 	this.gotoAndStop(0);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.shuttleleft_ena = function() {
+(lib.arrow_right = function() {
 	this.spriteSheet = ss["mockupFramework_atlas_"];
 	this.gotoAndStop(1);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.shuttleRight = function() {
+(lib.ic_arrow_drop_down_black_24dp_1x = function() {
 	this.spriteSheet = ss["mockupFramework_atlas_"];
 	this.gotoAndStop(2);
 }).prototype = p = new cjs.Sprite();
 
 
 
-(lib.toolbarBackground = function() {
+(lib.ic_arrow_drop_up_black_24dp_1x = function() {
 	this.spriteSheet = ss["mockupFramework_atlas_"];
 	this.gotoAndStop(3);
+}).prototype = p = new cjs.Sprite();
+
+
+
+(lib.postit = function() {
+	this.spriteSheet = ss["mockupFramework_atlas_"];
+	this.gotoAndStop(4);
+}).prototype = p = new cjs.Sprite();
+
+
+
+(lib.toolbarBackground = function() {
+	this.spriteSheet = ss["mockupFramework_atlas_"];
+	this.gotoAndStop(5);
 }).prototype = p = new cjs.Sprite();
 // helper functions:
 
@@ -58,7 +72,7 @@ function getMCSymbolPrototype(symbol, nominalBounds, frameBounds) {
 	this.initialize(mode,startPosition,loop,{});
 
 	// Layer 1
-	this.instance = new lib.shuttleleft_ena();
+	this.instance = new lib.arrow_left();
 	this.instance.parent = this;
 
 	this.timeline.addTween(cjs.Tween.get(this.instance).wait(1));
@@ -71,13 +85,39 @@ p.nominalBounds = new cjs.Rectangle(0,0,16,16);
 	this.initialize(mode,startPosition,loop,{});
 
 	// Layer 1
-	this.instance = new lib.shuttleRight();
+	this.instance = new lib.arrow_right();
 	this.instance.parent = this;
 
 	this.timeline.addTween(cjs.Tween.get(this.instance).wait(1));
 
 }).prototype = p = new cjs.MovieClip();
 p.nominalBounds = new cjs.Rectangle(0,0,16,16);
+
+
+(lib.moveNoteUpButton = function(mode,startPosition,loop) {
+	this.initialize(mode,startPosition,loop,{});
+
+	// Layer 1
+	this.instance = new lib.ic_arrow_drop_up_black_24dp_1x();
+	this.instance.parent = this;
+
+	this.timeline.addTween(cjs.Tween.get(this.instance).wait(1));
+
+}).prototype = p = new cjs.MovieClip();
+p.nominalBounds = new cjs.Rectangle(0,0,12,7);
+
+
+(lib.moveNoteDownButton = function(mode,startPosition,loop) {
+	this.initialize(mode,startPosition,loop,{});
+
+	// Layer 1
+	this.instance = new lib.ic_arrow_drop_down_black_24dp_1x();
+	this.instance.parent = this;
+
+	this.timeline.addTween(cjs.Tween.get(this.instance).wait(1));
+
+}).prototype = p = new cjs.MovieClip();
+p.nominalBounds = new cjs.Rectangle(0,0,12,7);
 
 
 (lib.hotspot = function(mode,startPosition,loop) {
@@ -95,15 +135,73 @@ p.nominalBounds = new cjs.Rectangle(0,0,80,61);
 
 
 (lib.Note = function(mode,startPosition,loop) {
-	this.initialize(mode,startPosition,loop,{});
+if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
+
+	// timeline functions:
+	this.frame_0 = function() {
+		// add eventListener to moveNoteUpButon
+		if (this.moveNoteUpButton.hasEventListener("click") == false) {
+			this.moveNoteUpButton.addEventListener("click", moveNoteHandler.bind(this));
+		}
+		
+		// add eventListener to moveNoteDownButon
+		if (this.moveNoteDownButton.hasEventListener("click") == false) {
+			this.moveNoteDownButton.addEventListener("click", moveNoteHandler.bind(this));
+		}
+		
+		this.moveNoteDownButton.visible = false;
+		
+		function moveNoteHandler() {
+			
+			console.log("move note , y = " + this.y);
+			
+			if (this.y > 400) {
+				this.y = 270; // move note to top of the viewport
+				this.moveNoteUpButton.visible = false; // hide the move up button
+				this.moveNoteDownButton.visible = true; // show the move down button
+			} else {
+				this.y = 684; // move note to bottom of the viewport
+				this.moveNoteUpButton.visible = true; // show move up button
+				this.moveNoteDownButton.visible = false; // show the move down button
+			}
+		}
+	}
+
+	// actions tween:
+	this.timeline.addTween(cjs.Tween.get(this).call(this.frame_0).wait(1));
 
 	// Layer 1
+	this.moveNoteDownButton = new lib.moveNoteDownButton();
+	this.moveNoteDownButton.parent = this;
+	this.moveNoteDownButton.setTransform(104,230);
+	new cjs.ButtonHelper(this.moveNoteDownButton, 0, 1, 1);
+
+	this.moveNoteUpButton = new lib.moveNoteUpButton();
+	this.moveNoteUpButton.parent = this;
+	this.moveNoteUpButton.setTransform(104,3);
+	new cjs.ButtonHelper(this.moveNoteUpButton, 0, 1, 1);
+
+	this.title = new cjs.Text("title", "bold 12px 'Arial Black'");
+	this.title.name = "title";
+	this.title.lineHeight = 19;
+	this.title.lineWidth = 200;
+	this.title.parent = this;
+	this.title.setTransform(10,14);
+
+	this.body = new cjs.Text("body", "12px 'Arial'");
+	this.body.name = "body";
+	this.body.lineHeight = 15;
+	this.body.lineWidth = 200;
+	this.body.parent = this;
+	this.body.setTransform(10,42);
+
 	this.instance = new lib.postit();
 	this.instance.parent = this;
+	this.instance.setTransform(0,0,0.413,0.449);
 
-	this.timeline.addTween(cjs.Tween.get(this.instance).wait(1));
+	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.instance},{t:this.body},{t:this.title},{t:this.moveNoteUpButton},{t:this.moveNoteDownButton}]}).wait(1));
 
-}).prototype = getMCSymbolPrototype(lib.Note, new cjs.Rectangle(0,0,533,534), null);
+}).prototype = getMCSymbolPrototype(lib.Note, new cjs.Rectangle(0,0,220,240), null);
 
 
 // stage content:
@@ -161,8 +259,8 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 			thisPassed.titleBarFrameLabel.text = frameLabel + " of " + thisPassed.totalFrames;
 			
 			// notes
-			thisPassed.noteTitle.text = frameLabel + ". " + dataStore.allNotes[thisPassed.currentFrame].title;
-			thisPassed.noteContent.text = dataStore.allNotes[thisPassed.currentFrame].content;
+			thisPassed.note.title.text = frameLabel + ". " + dataStore.allNotes[thisPassed.currentFrame].title;
+			thisPassed.note.body.text = dataStore.allNotes[thisPassed.currentFrame].body;
 		}
 		
 		function getURLParameter (sVar) {
@@ -172,11 +270,11 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 		
 		var noteInst;
 		
-		function Note (title, content) {
+		function Note (title, body) {
 		    this.title = title;
-		    this.content = content;
+		    this.body = body;
 		    this.getInfo = function() {
-		        return this.title + ' ' + this.content + ' note';
+		        return this.title + ' ' + this.body + ' note';
 		    };
 		}
 		// initialize the mockup
@@ -215,6 +313,12 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 		} else {
 			updateFrame(this, null);
 		}
+		
+		// place note in lower right corner if its not already in the upper right corner
+		if (this.note.y != 270) {
+			this.note.x = 1225;
+			this.note.y = 684;
+		}
 	}
 
 	// actions tween:
@@ -231,13 +335,6 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 	this.nextButton.setTransform(367,670,1,1,0,0,0,8,8);
 	new cjs.ButtonHelper(this.nextButton, 0, 1, 1);
 
-	this.noteTitle = new cjs.Text("noteTitle", "bold 12px 'Arial Black'");
-	this.noteTitle.name = "noteTitle";
-	this.noteTitle.lineHeight = 19;
-	this.noteTitle.lineWidth = 185;
-	this.noteTitle.parent = this;
-	this.noteTitle.setTransform(986,318.1);
-
 	this.titleBarFrameLabel = new cjs.Text("frame num", "11px 'Arial'");
 	this.titleBarFrameLabel.name = "titleBarFrameLabel";
 	this.titleBarFrameLabel.textAlign = "center";
@@ -246,29 +343,22 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 	this.titleBarFrameLabel.parent = this;
 	this.titleBarFrameLabel.setTransform(314.1,664.1);
 
-	this.noteContent = new cjs.Text("noteContent", "12px 'Arial'");
-	this.noteContent.name = "noteContent";
-	this.noteContent.lineHeight = 15;
-	this.noteContent.lineWidth = 185;
-	this.noteContent.parent = this;
-	this.noteContent.setTransform(986,345.8);
-
 	this.titleBarMockupLabel = new cjs.Text("mockupLabel", "bold 12px 'Arial Black'");
 	this.titleBarMockupLabel.name = "titleBarMockupLabel";
 	this.titleBarMockupLabel.lineHeight = 19;
-	this.titleBarMockupLabel.lineWidth = 191;
+	this.titleBarMockupLabel.lineWidth = 227;
 	this.titleBarMockupLabel.parent = this;
-	this.titleBarMockupLabel.setTransform(8,661.1);
+	this.titleBarMockupLabel.setTransform(8,660.1);
 
 	this.instance = new lib.toolbarBackground();
 	this.instance.parent = this;
 	this.instance.setTransform(0,658);
 
-	this.instance_1 = new lib.Note();
-	this.instance_1.parent = this;
-	this.instance_1.setTransform(1080,412,0.375,0.375,0,0,0,266.5,267);
+	this.note = new lib.Note();
+	this.note.parent = this;
+	this.note.setTransform(1223.5,683.1,1,1,0,0,0,266.5,267.1);
 
-	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.instance_1},{t:this.instance},{t:this.titleBarMockupLabel},{t:this.noteContent},{t:this.titleBarFrameLabel},{t:this.noteTitle},{t:this.nextButton},{t:this.previousButton}]}).wait(4));
+	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.note},{t:this.instance},{t:this.titleBarMockupLabel},{t:this.titleBarFrameLabel},{t:this.nextButton},{t:this.previousButton}]}).wait(4));
 
 	// hotspot
 	this.hotspot = new lib.hotspot();
@@ -297,7 +387,7 @@ lib.properties = {
 	color: "#FFFFFF",
 	opacity: 1.00,
 	manifest: [
-		{src:"images/mockupFramework_atlas_.png?1493301059982", id:"mockupFramework_atlas_"}
+		{src:"images/mockupFramework_atlas_.png?1493309567007", id:"mockupFramework_atlas_"}
 	],
 	preloads: []
 };
