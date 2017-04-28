@@ -134,6 +134,26 @@ p.nominalBounds = new cjs.Rectangle(0,0,12,7);
 p.nominalBounds = new cjs.Rectangle(0,0,80,61);
 
 
+(lib.___Camera___ = function(mode,startPosition,loop) {
+	this.initialize(mode,startPosition,loop,{});
+
+	// timeline functions:
+	this.frame_0 = function() {
+		this.visible = false;
+	}
+
+	// actions tween:
+	this.timeline.addTween(cjs.Tween.get(this).call(this.frame_0).wait(2));
+
+	// viewfinder
+	this.shape = new cjs.Shape();
+	this.shape.graphics.f().s("rgba(0,0,0,0)").ss(2,1,1,3,true).p("EAq+AfQMhV7AAAMAAAg+fMBV7AAAg");
+
+	this.timeline.addTween(cjs.Tween.get(this.shape).wait(2));
+
+}).prototype = p = new cjs.MovieClip();
+
+
 (lib.Note = function(mode,startPosition,loop) {
 if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 
@@ -225,6 +245,24 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 			this.previousButton.addEventListener("click", clickPreviousButtonHandler.bind(this));
 		}
 		
+		function displayNotesAndTitle() {
+			
+			// update text
+			if (root.titleBarMockupLabel.text.length == 0) {
+				root.titleBarMockupLabel.text = dataStore.mockupLabel;
+			}
+			
+			if (initialFrameRequested != "") {
+				if (parseInt(initialFrameRequested) <= root.totalFrames && parseInt(initialFrameRequested) >= 0) {
+					updateFrame(initialFrameRequested);
+				} else {
+					updateFrame(null);
+				}
+			} else {
+				updateFrame(null);
+			}
+		}
+		
 		function clickHotspotHandler() {
 			
 			if (this.currentFrame+1 == this.totalFrames) {
@@ -232,44 +270,42 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 			} else {
 				this.gotoAndStop(this.currentFrame + 1); // advance to next frame
 			}
-			updateFrame(this, null);
+			updateFrame(null);
 		}
 		
 		function clickPreviousButtonHandler() {
 		
 			if (this.currentFrame - 1 < 0) {
-				//this.gotoAndStop(this.totalFrames + 1); // if on first frame then go to last frame 
-				updateFrame(this, this.totalFrames);
+				updateFrame(this.totalFrames); // go to last frame in the animation
 			} else {
-				updateFrame(this, this.currentFrame); // go to previous frame
+				updateFrame(this.currentFrame); // go to previous frame
 			}
 		}
 		
-		function updateFrame(thisPassed, frameRequested) {
+		function updateFrame(frameRequested) {
 			
 			// go to requestedFrame if requested
 			if (frameRequested != null) {
 				frameRequested--;
-				thisPassed.gotoAndStop(frameRequested);
+				root.gotoAndStop(frameRequested);
 				console.log("frameRequested = " + frameRequested);
 			}
 			
 			// toolbar
-			var frameLabel = thisPassed.currentFrame + 1
-			thisPassed.titleBarFrameLabel.text = frameLabel + " of " + thisPassed.totalFrames;
+			var frameLabel = root.currentFrame + 1
+			root.titleBarFrameLabel.text = frameLabel + " of " + root.totalFrames;
 			
 			// notes
-			thisPassed.note.title.text = frameLabel + ". " + dataStore.allNotes[thisPassed.currentFrame].title;
-			thisPassed.note.body.text = dataStore.allNotes[thisPassed.currentFrame].body;
+			root.note.title.text = frameLabel + ". " + dataStore.allNotes[root.currentFrame].title;
+			root.note.body.text = dataStore.allNotes[root.currentFrame].body;
 		}
 		
 		function getURLParameter (sVar) {
 		  return unescape(window.location.search.replace(new RegExp("^(?:.*[&\\?]" + escape(sVar).replace(/[\.\+\*]/g, "\\$&") + "(?:\\=([^&]*))?)?.*$", "i"), "$1"));
 		}
 		
-		
+		// init
 		var noteInst;
-		
 		function Note (title, body) {
 		    this.title = title;
 		    this.body = body;
@@ -278,41 +314,63 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 		    };
 		}
 		// initialize the mockup
-		
+		var root = this;
 		var dataStore = new createjs.Container();
 		dataStore.allNotes = [];
+		// empty note data so the page can be displayed before the API returns the notes
+		noteInst = new Note('', '');
+		dataStore.allNotes.push(noteInst);
+		dataStore.mockupLabel = ".";
 		
-		// note data
-		noteInst = new Note('title 1', 'content 1');
-		dataStore.allNotes.push(noteInst);
-		noteInst = new Note('title 2', 'content 2');
-		dataStore.allNotes.push(noteInst);
-		noteInst = new Note('title 3', 'content 3');
-		dataStore.allNotes.push(noteInst);
-		noteInst = new Note('title 4', 'content 4');
-		dataStore.allNotes.push(noteInst);
+		// handle request
+		function status(response) {  
+		  if (response.status >= 200 && response.status < 300) { 
+		    return Promise.resolve(response)  
+		  } else {  
+		    return Promise.reject(new Error(response.statusText))  
+		  }  
+		}
 		
-		// mockup data
-		dataStore.mockupLabel = "sample mockup";
+		function json(response) {  
+		  return response.json()  
+		}
+		var server = "http://www.ptangen.com/walkthroughs/";
+		var filePath = "db/getFrameMetadataXML.php?format=json";
+		var mockupName = getURLParameter("mockupName");
+		var release = getURLParameter("release");
+		
+		var request = new Request(server + filePath + "&mockupName=" + mockupName + "&release=" + release, {
+			method: 'GET', 
+			mode: 'cors', 
+			headers: new Headers({
+				'Content-Type': 'text/plain'
+			})
+		});
+		
+		fetch(request)
+			.then(status)  
+			.then(json)  
+			.then(function(data) {
+				for (var i=0; i < data.length; i++) {
+					console.log(data[i].noteTitle);
+					noteInst = new Note(data[i].noteTitle, data[i].noteContent);
+					dataStore.allNotes.push(noteInst);
+				}
+				dataStore.allNotes.splice(0,1); // remove the placeholder data
+				dataStore.mockupLabel = "sample mockup";
+				displayNotesAndTitle(); // update the text after the datastore is populated
+				
+			}).catch(function(error) {  
+				console.log('Request failed', error);  
+			});
 		
 		// disable the default animation
 		this.stop();
 		
-		// update text
-		this.titleBarMockupLabel.text = dataStore.mockupLabel;
-		
 		// determine which frame to show initially
 		var initialFrameRequested = getURLParameter("frame"); // try to get value of frame from url
 		
-		if (initialFrameRequested != "") {
-			if (parseInt(initialFrameRequested) <= this.totalFrames && parseInt(initialFrameRequested) >= 0) {
-				updateFrame(this, initialFrameRequested);
-			} else {
-				updateFrame(this, null);
-			}
-		} else {
-			updateFrame(this, null);
-		}
+		displayNotesAndTitle();
 		
 		// place note in lower right corner if its not already in the upper right corner
 		if (this.note.y != 270) {
@@ -323,6 +381,13 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 
 	// actions tween:
 	this.timeline.addTween(cjs.Tween.get(this).call(this.frame_0).wait(4));
+
+	// Camera
+	this.___camera___instance = new lib.___Camera___();
+	this.___camera___instance.parent = this;
+	this.___camera___instance.setTransform(590,340);
+
+	this.timeline.addTween(cjs.Tween.get(this.___camera___instance).wait(4));
 
 	// framework
 	this.previousButton = new lib.previousButton();
@@ -360,6 +425,15 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 
 	this.timeline.addTween(cjs.Tween.get({}).to({state:[{t:this.note},{t:this.instance},{t:this.titleBarMockupLabel},{t:this.titleBarFrameLabel},{t:this.nextButton},{t:this.previousButton}]}).wait(4));
 
+	// Actions
+	this.text = new cjs.Text("", "12px 'ArialMT'");
+	this.text.lineHeight = 15;
+	this.text.lineWidth = 100;
+	this.text.parent = this;
+	this.text.setTransform(41,455.2);
+
+	this.timeline.addTween(cjs.Tween.get(this.text).to({_off:true},1).wait(3));
+
 	// hotspot
 	this.hotspot = new lib.hotspot();
 	this.hotspot.parent = this;
@@ -369,16 +443,16 @@ if (loop == null) { loop = false; }	this.initialize(mode,startPosition,loop,{});
 	this.timeline.addTween(cjs.Tween.get(this.hotspot).wait(1).to({x:322.5,y:187.5},0).wait(1).to({x:179,y:127.5},0).wait(1).to({x:311.6,y:132.5},0).wait(1));
 
 	// content
-	this.text = new cjs.Text("1", "24px 'Times'", "#0066CC");
-	this.text.lineHeight = 26;
-	this.text.lineWidth = 67;
-	this.text.parent = this;
-	this.text.setTransform(330,185.1);
+	this.text_1 = new cjs.Text("1", "24px 'Times'", "#0066CC");
+	this.text_1.lineHeight = 26;
+	this.text_1.lineWidth = 67;
+	this.text_1.parent = this;
+	this.text_1.setTransform(330,185.1);
 
-	this.timeline.addTween(cjs.Tween.get(this.text).wait(1).to({x:320,y:173.5,text:"2"},0).wait(1).to({x:181,y:129.5,text:"3"},0).wait(1).to({x:312,y:118.5,text:"4"},0).wait(1));
+	this.timeline.addTween(cjs.Tween.get(this.text_1).wait(1).to({x:320,y:173.5,text:"2"},0).wait(1).to({x:181,y:129.5,text:"3"},0).wait(1).to({x:312,y:118.5,text:"4"},0).wait(1));
 
 }).prototype = p = new cjs.MovieClip();
-p.nominalBounds = new cjs.Rectangle(590,510.1,1180,513);
+p.nominalBounds = new cjs.Rectangle(589,339,1182,684);
 // library properties:
 lib.properties = {
 	width: 1180,
@@ -387,7 +461,7 @@ lib.properties = {
 	color: "#FFFFFF",
 	opacity: 1.00,
 	manifest: [
-		{src:"images/mockupFramework_atlas_.png?1493309567007", id:"mockupFramework_atlas_"}
+		{src:"images/mockupFramework_atlas_.png?1493328412419", id:"mockupFramework_atlas_"}
 	],
 	preloads: []
 };
